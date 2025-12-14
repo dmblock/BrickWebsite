@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
 import axios from 'axios'
+import AlertDialog from '@/components/ui/alert-dialog'
 
 // 从 localStorage 读取设置
 const getSettings = () => {
@@ -44,7 +46,7 @@ const getDefaultDocUrl = (settings: AppSettings | null): string => {
   if (settings.corsProxyEndpoint) {
     // 检查docUrl是否是完整URL
     try {
-      const urlObj = new URL(docUrl)
+      const urlObj = new网站(docUrl)
       // 如果是完整URL，提取路径部分（从主机名后开始）
       const pathWithProtocol = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`
       docUrl = `${settings.corsProxyEndpoint}/${pathWithProtocol}`
@@ -58,18 +60,40 @@ const getDefaultDocUrl = (settings: AppSettings | null): string => {
 }
 
 export default function Doc() {
+  const navigate = useNavigate()
+  const [showConfigDialog, setShowConfigDialog] = useState(false)
   const [content, setContent] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
+  const handleConfigure = () => {
+    navigate('/settings')
+  }
+
   useEffect(() => {
+    // 检查设置
+    const savedSettings = getSettings() as AppSettings | null
+    console.log('Loaded settings for doc:', savedSettings)
+    
+    // 检查必要的配置字段是否存在
+    if (
+      !savedSettings ||
+      !savedSettings.corsProxyEndpoint ||
+      !savedSettings.brickIndex ||
+      !savedSettings.repoUrl
+    ) {
+      console.log('Missing settings for doc, showing dialog')
+      setShowConfigDialog(true)
+      setLoading(false) // 停止加载
+      return // 不继续获取文档
+    }
+
     const fetchDocContent = async () => {
       setLoading(true)
       setError(null)
 
       try {
-        const settings = getSettings() as AppSettings | null
-        const docUrl = getDefaultDocUrl(settings)
+        const docUrl = getDefaultDocUrl(savedSettings)
 
         console.log('Fetching default doc from:', docUrl)
         const response = await axios.get(docUrl, {
@@ -103,6 +127,26 @@ export default function Doc() {
 
     fetchDocContent()
   }, [])
+
+  if (showConfigDialog) {
+    return (
+      <div className='min-h-screen bg-background p-8'>
+        <div className='max-w-4xl mx-auto'>
+          <AlertDialog
+            open={showConfigDialog}
+            onOpenChange={setShowConfigDialog}
+            title='缺少配置'
+            description='检测到您尚未配置跨域代理地址、应用市场索引或仓库地址。请先完成配置以使用文档功能。'
+            confirmText='前往配置'
+            onConfirm={handleConfigure}
+          />
+          <div className='text-muted-foreground text-center mt-8'>
+            等待配置完成...
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (error) {
     return (
