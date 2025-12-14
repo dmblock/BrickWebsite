@@ -28,7 +28,7 @@ const DEFAULT_VALUES = {
     'https://codespace.lantian.pro/LantianCloud/BrickHub/raw/branch/main/index.json',
   repoUrl: 'https://codespace.lantian.pro/LantianCloud/BrickHub',
   docBaseUrl:
-    'https://codespace.lantian.pro/LantianCloud/Brick/raw/branch/main/docs',
+    'https://codespace.lantian.pro/LantianCloud/Brick/raw/branch/main',
 } as const
 
 // 从环境变量读取默认值（备用）
